@@ -1,8 +1,8 @@
-package jan.ondra.newsservice.clients.openai;
+package jan.ondra.newsservice.ai.dto;
 
 import java.util.List;
 
-record ChatGptRequestBody(
+public record ChatGptRequestBody(
     String model,
     int max_output_tokens,
     double temperature,
@@ -17,7 +17,7 @@ record ChatGptRequestBody(
         "sentences. Otherwise, if the article doesn't contain relevant information, set relevant to false and " +
         "sentiment and summary to an empty string.";
 
-    ChatGptRequestBody(String companyName, String newsArticle) {
+    public ChatGptRequestBody(String companyName, String newsArticle) {
         this(
             "gpt-4o-mini",
             200,
