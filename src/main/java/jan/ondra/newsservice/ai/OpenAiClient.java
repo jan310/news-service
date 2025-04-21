@@ -2,9 +2,9 @@ package jan.ondra.newsservice.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jan.ondra.newsservice.ai.dto.ChatGptQueryResult;
-import jan.ondra.newsservice.ai.dto.ChatGptRequestBody;
-import jan.ondra.newsservice.ai.dto.ChatGptResponseBody;
+import jan.ondra.newsservice.dto.ChatGptQueryResult;
+import jan.ondra.newsservice.dto.ChatGptRequestBody;
+import jan.ondra.newsservice.dto.ChatGptResponseBody;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;

@@ -1,4 +1,4 @@
-package jan.ondra.newsservice.ai.dto;
+package jan.ondra.newsservice.dto;
 
 import java.util.List;
 
