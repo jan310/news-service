@@ -18,9 +18,11 @@ public class OpenAiClient {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final String openAiModel;
 
     public OpenAiClient(
         @Value("${external-api.openai.api-key}") String apiKey,
+        @Value("${external-api.openai.model}") String openAiModel,
         RestClient.Builder restClientBuilder,
         ObjectMapper objectMapper
     ) {
@@ -29,6 +31,7 @@ public class OpenAiClient {
             .defaultHeader(AUTHORIZATION, "Bearer " + apiKey)
             .build();
         this.objectMapper = objectMapper;
+        this.openAiModel = openAiModel;
     }
 
     public ChatGptQueryResult evaluateAndSummarizeCompanyNews(String companyName, String newsArticle) {
@@ -39,7 +42,7 @@ public class OpenAiClient {
                 .post()
                 .uri("/responses")
                 .contentType(APPLICATION_JSON)
-                .body(new ChatGptRequestBody(companyName, newsArticle))
+                .body(new ChatGptRequestBody(openAiModel, companyName, newsArticle))
                 .retrieve()
                 .body(ChatGptResponseBody.class);
         } catch (RestClientException e) {

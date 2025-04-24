@@ -56,4 +56,12 @@ public class YahooFinanceParser {
         return stringBuilder.toString();
     }
 
+    public String getCompanyNameOfTicker(String ticker) {
+        var doc = Jsoup.parse(webScraper.getHtml("https://finance.yahoo.com/quote/" + ticker));
+
+        var docTitle = doc.title();
+
+        return docTitle.substring(0, docTitle.indexOf('(') - 1);
+    }
+
 }

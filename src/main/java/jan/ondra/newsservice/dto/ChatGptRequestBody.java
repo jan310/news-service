@@ -11,21 +11,21 @@ public record ChatGptRequestBody(
     List<Input> input
 ) {
 
-    private static final String systemMessage = "Read the provided news article and evaluate its relevancy for %s " +
+    private static final String SYSTEM_MESSAGE = "Read the provided news article and evaluate its relevancy for %s " +
         "investors. If the article contains relevant information, set relevant to true, evaluate the sentiment and " +
         "set it to either POSITIVE, NEUTRAL or NEGATIVE and provide a summary of the key points in at most two " +
         "sentences. Otherwise, if the article doesn't contain relevant information, set relevant to false and " +
-        "sentiment and summary to an empty string.";
+        "sentiment and summary to null.";
 
-    public ChatGptRequestBody(String companyName, String newsArticle) {
+    public ChatGptRequestBody(String openAiModel, String companyName, String newsArticle) {
         this(
-            "gpt-4o-mini",
+            openAiModel,
             200,
             0,
             0,
             new Text(),
             List.of(
-                new Input("system", String.format(systemMessage, companyName)),
+                new Input("system", String.format(SYSTEM_MESSAGE, companyName)),
                 new Input("user", newsArticle)
             )
         );
@@ -52,14 +52,14 @@ public record ChatGptRequestBody(
                             this("boolean");
                         }
                     }
-                    record Sentiment(String type) {
+                    record Sentiment(List<String> type) {
                         private Sentiment() {
-                            this("string");
+                            this(List.of("string", "null"));
                         }
                     }
-                    record Summary(String type) {
+                    record Summary(List<String> type) {
                         private Summary() {
-                            this("string");
+                            this(List.of("string", "null"));
                         }
                     }
                 }
