@@ -2,7 +2,7 @@ package jan.ondra.newsservice.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jan.ondra.newsservice.dto.ChatGptQueryResult;
+import jan.ondra.newsservice.dto.NewsArticleAnalysis;
 import jan.ondra.newsservice.dto.ChatGptRequestBody;
 import jan.ondra.newsservice.dto.ChatGptResponseBody;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +34,7 @@ public class OpenAiClient {
         this.openAiModel = openAiModel;
     }
 
-    public ChatGptQueryResult evaluateAndSummarizeCompanyNews(String companyName, String newsArticle) {
+    public NewsArticleAnalysis evaluateAndSummarizeCompanyNews(String companyName, String newsArticle) {
         ChatGptResponseBody response;
 
         try {
@@ -52,7 +52,7 @@ public class OpenAiClient {
         try {
             return objectMapper.readValue(
                 response.output().getFirst().content().getFirst().text(),
-                ChatGptQueryResult.class
+                NewsArticleAnalysis.class
             );
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

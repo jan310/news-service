@@ -116,6 +116,23 @@ public class StockRepository {
         jdbcTemplate.update(sqlStatement, parameters);
     }
 
+    public void updateLatestNewsLink(String ticker, String newLink) {
+        var sqlStatement = """
+            UPDATE stocks
+            SET
+                latest_news_link = :latest_news_link
+            WHERE
+                ticker = :ticker;
+            """;
+
+        var parameters = Map.of(
+            "stock_ticker", ticker,
+            "latest_news_link", newLink
+        );
+
+        jdbcTemplate.update(sqlStatement, parameters);
+    }
+
     public List<Stock> getStocks() {
         var sqlStatement = "SELECT * FROM stocks";
 
