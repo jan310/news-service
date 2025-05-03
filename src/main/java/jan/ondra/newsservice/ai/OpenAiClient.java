@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jan.ondra.newsservice.dto.NewsArticleAnalysis;
 import jan.ondra.newsservice.dto.ChatGptRequestBody;
 import jan.ondra.newsservice.dto.ChatGptResponseBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -15,6 +17,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @Component
 public class OpenAiClient {
+
+    private final Logger logger = LoggerFactory.getLogger(OpenAiClient.class);
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -48,6 +52,9 @@ public class OpenAiClient {
         } catch (RestClientException e) {
             throw new RuntimeException(e);
         }
+
+        logger.info("OpenAI input tokens used: {}", response.usage().input_tokens());
+        logger.info("OpenAI output tokens used: {}", response.usage().output_tokens());
 
         try {
             return objectMapper.readValue(

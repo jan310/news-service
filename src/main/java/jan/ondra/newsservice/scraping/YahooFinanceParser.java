@@ -2,6 +2,7 @@ package jan.ondra.newsservice.scraping;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -12,11 +13,11 @@ import java.util.List;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 @Component
-public class YahooFinanceScraper {
+public class YahooFinanceParser {
 
     private final RestClient restClient;
 
-    public YahooFinanceScraper(RestClient.Builder restClientBuilder) {
+    public YahooFinanceParser(RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder
             .defaultHeader(
                 USER_AGENT,
@@ -26,24 +27,13 @@ public class YahooFinanceScraper {
     }
 
     public List<String> getNewsLinksForStockTicker(String ticker) {
-        var doc = Jsoup.parse(getWebContent("https://finance.yahoo.com/quote/" + ticker + "/news/"));
-
-        var listItems = doc.select(".stream-item.story-item.yf-1usaaz9");
-
         var links = new ArrayList<String>();
 
-        for (Element li : listItems) {
-            Element section = li.selectFirst("section");
-            if (section != null) {
-                Element link = section.selectFirst("a");
-                if (link != null) {
-                    String href = link.attr("href");
-                    if (!href.isEmpty()) {
-                        links.add(href);
-                    }
-                }
-            }
-        }
+        var doc = Jsoup.parse(
+            getWebContent("https://feeds.finance.yahoo.com/rss/2.0/headline?s=" + ticker), Parser.xmlParser()
+        );
+
+        doc.select("item").forEach(item -> links.add(item.selectFirst("link").text()));
 
         return links;
     }

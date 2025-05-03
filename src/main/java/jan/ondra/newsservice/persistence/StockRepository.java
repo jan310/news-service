@@ -122,7 +122,7 @@ public class StockRepository {
             SET
                 latest_news_link = :latest_news_link
             WHERE
-                ticker = :ticker;
+                ticker = :stock_ticker;
             """;
 
         var parameters = Map.of(

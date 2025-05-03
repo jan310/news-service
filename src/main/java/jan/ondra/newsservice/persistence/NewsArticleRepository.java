@@ -31,7 +31,7 @@ public class NewsArticleRepository {
                 sentiment
             ) VALUES (
                 :link,
-                :stock_ticker
+                :stock_ticker,
                 :summary,
                 :sentiment
             );
