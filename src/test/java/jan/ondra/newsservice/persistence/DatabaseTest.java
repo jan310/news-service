@@ -1,20 +1,20 @@
-package jan.ondra.newsservice;
+package jan.ondra.newsservice.persistence;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
-@SpringBootTest
-class NewsServiceApplicationTests {
+@JdbcTest
+public class DatabaseTest {
+
+    @Autowired
+    public JdbcTemplate jdbcTemplate;
 
     @Container
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.4");
-
-    @Test
-    void contextLoads() {
-    }
 
 }

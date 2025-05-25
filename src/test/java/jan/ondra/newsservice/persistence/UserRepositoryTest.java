@@ -5,23 +5,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace.NONE;
 
-@ActiveProfiles("test")
-@JdbcTest
 @Import(UserRepository.class)
-@AutoConfigureTestDatabase(replace = NONE)
-class UserRepositoryTest {
+class UserRepositoryTest extends DatabaseTest {
 
     @Autowired private UserRepository userRepository;
-    @Autowired private JdbcTemplate jdbcTemplate;
 
     @Nested
     class CreateUser {
@@ -39,10 +30,10 @@ class UserRepositoryTest {
     }
 
     private User getSavedUser(String id) {
-        return jdbcTemplate.query(
+        return jdbcTemplate.queryForObject(
             String.format("SELECT * FROM users WHERE id = '%s'", id),
             new UserRowMapper()
-        ).getFirst();
+        );
     }
 
 }
