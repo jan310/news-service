@@ -1,6 +1,9 @@
 package jan.ondra.newsservice.persistence;
 
-import jan.ondra.newsservice.domain.models.User;
+import jan.ondra.newsservice.core.user.model.User;
+import jan.ondra.newsservice.core.user.persistence.UserDTOMapper;
+import jan.ondra.newsservice.core.user.persistence.UserRepository;
+import jan.ondra.newsservice.core.user.persistence.UserDTORowMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,9 +33,11 @@ class UserRepositoryTest extends DatabaseTest {
     }
 
     private User getSavedUser(String id) {
-        return jdbcTemplate.queryForObject(
-            String.format("SELECT * FROM users WHERE id = '%s'", id),
-            new UserRowMapper()
+        return UserDTOMapper.getDomainModel(
+            jdbcTemplate.queryForObject(
+                String.format("SELECT * FROM users WHERE id = '%s'", id),
+                new UserDTORowMapper()
+            )
         );
     }
 
