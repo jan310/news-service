@@ -1,9 +1,9 @@
 package jan.ondra.newsservice.scheduled.newsgathering.service;
 
 import jan.ondra.newsservice.core.newsarticle.model.NewsArticle;
+import jan.ondra.newsservice.core.newsarticle.service.NewsArticleService;
 import jan.ondra.newsservice.core.stock.model.Stock;
-import jan.ondra.newsservice.core.newsarticle.persistence.NewsArticleRepository;
-import jan.ondra.newsservice.core.stock.persistence.StockRepository;
+import jan.ondra.newsservice.core.stock.service.StockService;
 import jan.ondra.newsservice.scheduled.newsgathering.analysis.OpenAiClient;
 import jan.ondra.newsservice.scheduled.newsgathering.scraping.YahooFinanceParser;
 import org.springframework.stereotype.Service;
@@ -11,25 +11,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class NewsGatheringService {
 
-    private final StockRepository stockRepository;
-    private final NewsArticleRepository newsArticleRepository;
+    private final StockService stockService;
+    private final NewsArticleService newsArticleService;
     private final YahooFinanceParser yahooFinanceParser;
     private final OpenAiClient openAiClient;
 
     public NewsGatheringService(
-        StockRepository stockRepository,
-        NewsArticleRepository newsArticleRepository,
+        StockService stockService,
+        NewsArticleService newsArticleService,
         YahooFinanceParser yahooFinanceParser,
         OpenAiClient openAiClient
     ) {
-        this.stockRepository = stockRepository;
+        this.stockService = stockService;
         this.yahooFinanceParser = yahooFinanceParser;
         this.openAiClient = openAiClient;
-        this.newsArticleRepository = newsArticleRepository;
+        this.newsArticleService = newsArticleService;
     }
 
     public void gatherNews() {
-        var stocks = stockRepository.getStocks();
+        var stocks = stockService.getStocks();
 
         for (Stock stock : stocks) {
             var newsLinks = yahooFinanceParser.getNewsLinksForStockTicker(stock.ticker());
@@ -41,7 +41,7 @@ public class NewsGatheringService {
 
             if (newsLinks.isEmpty()) continue;
 
-            stockRepository.updateLatestNewsLink(stock.ticker(), newsLinks.getFirst());
+            stockService.updateLatestNewsLink(stock.ticker(), newsLinks.getFirst());
 
             for (String link : newsLinks) {
                 if (!link.startsWith("https://finance.yahoo.com/")) continue;
@@ -52,7 +52,7 @@ public class NewsGatheringService {
                     newsArticle
                 );
                 if (newsArticleAnalysis.relevant()) {
-                    newsArticleRepository.addNewsArticleToStock(
+                    newsArticleService.addNewsArticleToStock(
                         new NewsArticle(link, newsArticleAnalysis.summary(), newsArticleAnalysis.sentiment()),
                         stock.ticker()
                     );

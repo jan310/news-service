@@ -1,7 +1,7 @@
 package jan.ondra.newsservice.scheduled.notification;
 
 import jan.ondra.newsservice.core.newsarticle.model.CompanyNews;
-import jan.ondra.newsservice.core.newsarticle.persistence.NewsArticleRepository;
+import jan.ondra.newsservice.core.newsarticle.service.NewsArticleService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -11,15 +11,15 @@ import java.util.HashMap;
 @Service
 public class NewsletterService {
 
-    private final NewsArticleRepository newsArticleRepository;
+    private final NewsArticleService newsArticleService;
 
-    public NewsletterService(NewsArticleRepository newsArticleRepository) {
-        this.newsArticleRepository = newsArticleRepository;
+    public NewsletterService(NewsArticleService newsArticleService) {
+        this.newsArticleService = newsArticleService;
     }
 
     @Async
     public void generateAndSendNewsletter(String userId, String email) {
-        var companyNewsRelevantForUser = newsArticleRepository.getCompanyNewsRelevantForUser(userId);
+        var companyNewsRelevantForUser = newsArticleService.getCompanyNewsRelevantForUser(userId);
 
         var companyNewsGroupedByTicker = new HashMap<String, ArrayList<CompanyNews>>();
         for (CompanyNews companyNews : companyNewsRelevantForUser) {
