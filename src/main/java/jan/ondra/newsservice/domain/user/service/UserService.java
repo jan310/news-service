@@ -1,24 +1,28 @@
 package jan.ondra.newsservice.domain.user.service;
 
-import jan.ondra.newsservice.domain.news.service.NewsService;
+import jan.ondra.newsservice.domain.user.model.NotificationTarget;
 import jan.ondra.newsservice.domain.user.model.User;
 import jan.ondra.newsservice.domain.user.persistence.UserRepository;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final NewsService newsService;
 
-    public UserService(UserRepository userRepository, NewsService newsService) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.newsService = newsService;
     }
 
     public void addUser(User user) {
         userRepository.addUser(user);
+    }
+
+    public User getUser(String id) {
+        return userRepository.getUser(id);
     }
 
     public void updateUser(User user) {
@@ -29,12 +33,8 @@ public class UserService {
         userRepository.deleteUser(userId);
     }
 
-    // runs every day at 5.30 am
-    @Scheduled(cron = "0 30 5 * * *")
-    public void notifyUsers() {
-        for (User user : userRepository.getUsers()) {
-            newsService.generateAndSendNewsletter(user.id(), user.email());
-        }
+    public List<NotificationTarget> getNotificationTargetsByNotificationTime(LocalDateTime utcDateTime) {
+        return userRepository.getNotificationTargetsByNotificationTime(utcDateTime);
     }
 
 }

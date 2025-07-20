@@ -1,6 +1,5 @@
 package jan.ondra.newsservice.domain.user.api;
 
-import jan.ondra.newsservice.domain.user.model.User;
 import jan.ondra.newsservice.domain.user.service.UserService;
 import jan.ondra.newsservice.util.UserIdExtractor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,13 +30,13 @@ public class UserController {
     @PostMapping
     @ResponseStatus(CREATED)
     public void addUser(@RequestHeader(AUTHORIZATION) String bearerToken, @RequestBody UserRequest userRequest) {
-        userService.addUser(new User(userIdExtractor.extractFromBearerToken(bearerToken), userRequest.email()));
+        userService.addUser(userRequest.toUser(userIdExtractor.extractFromBearerToken(bearerToken)));
     }
 
     @PutMapping
     @ResponseStatus(NO_CONTENT)
     public void updateUser(@RequestHeader(AUTHORIZATION) String bearerToken, @RequestBody UserRequest userRequest) {
-        userService.updateUser(new User(userIdExtractor.extractFromBearerToken(bearerToken), userRequest.email()));
+        userService.updateUser(userRequest.toUser(userIdExtractor.extractFromBearerToken(bearerToken)));
     }
 
     @DeleteMapping

@@ -1,4 +1,4 @@
-package jan.ondra.newsservice.persistence;
+package jan.ondra.newsservice.helper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -8,7 +8,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
 @JdbcTest
-public class DatabaseTest {
+public class TestcontainersTest {
 
     @Autowired
     public JdbcTemplate jdbcTemplate;

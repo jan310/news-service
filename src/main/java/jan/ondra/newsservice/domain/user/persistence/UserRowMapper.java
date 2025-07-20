@@ -14,7 +14,10 @@ public class UserRowMapper implements RowMapper<User> {
     public User mapRow(ResultSet rs, int rowNum) throws SQLException {
         return new User(
             rs.getString("id"),
-            rs.getString("email")
+            rs.getBoolean("notification_enabled"),
+            rs.getString("notification_email"),
+            rs.getTime("notification_time").toLocalTime(),
+            rs.getString("time_zone")
         );
     }
 

@@ -8,9 +8,9 @@ import jan.ondra.newsservice.domain.news.persistence.NewsRepository;
 import jan.ondra.newsservice.domain.stock.model.Stock;
 import jan.ondra.newsservice.domain.stock.service.StockService;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,15 +53,7 @@ public class NewsService {
         return companyNewsGroupedByTicker;
     }
 
-    // runs every day at 5.50 am
-    @Scheduled(cron = "0 50 5 * * *")
-    public void deleteNewsArticles() {
-        newsRepository.deleteNewsArticles();
-    }
-
-    // runs every hour
-    @Scheduled(cron = "0 0 * * * *")
-    public void gatherNews() {
+    public void gatherNews(LocalDateTime creationTimeStamp) {
         var stocks = stockService.getAllStocks();
 
         for (Stock stock : stocks) {
@@ -86,7 +78,12 @@ public class NewsService {
                 );
                 if (newsArticleAnalysis.relevant()) {
                     newsRepository.addNewsArticleToStock(
-                        new NewsArticle(link, newsArticleAnalysis.summary(), newsArticleAnalysis.sentiment()),
+                        new NewsArticle(
+                            link,
+                            newsArticleAnalysis.summary(),
+                            newsArticleAnalysis.sentiment(),
+                            creationTimeStamp
+                        ),
                         stock.ticker()
                     );
                 }
@@ -95,7 +92,7 @@ public class NewsService {
     }
 
     @Async
-    public void generateAndSendNewsletter(String userId, String email) {
+    public void generateAndSendNewsletter(String userId, String notificationEmail) {
         var companyNewsGroupedByTicker = getCompanyNewsForUserGroupedByTicker(userId);
 
         var newsletter = new StringBuilder();
@@ -123,6 +120,10 @@ public class NewsService {
         }
 
         System.out.println(newsletter);
+    }
+
+    public void deleteNewsArticlesCreatedAtOrBefore(LocalDateTime localDateTime) {
+        newsRepository.deleteNewsArticlesCreatedAtOrBefore(localDateTime);
     }
 
 }
