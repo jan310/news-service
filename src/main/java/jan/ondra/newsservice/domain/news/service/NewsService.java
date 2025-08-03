@@ -7,6 +7,8 @@ import jan.ondra.newsservice.domain.news.model.NewsArticle;
 import jan.ondra.newsservice.domain.news.persistence.NewsRepository;
 import jan.ondra.newsservice.domain.stock.model.Stock;
 import jan.ondra.newsservice.domain.stock.service.StockService;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class NewsService {
@@ -23,17 +26,20 @@ public class NewsService {
     private final StockService stockService;
     private final YahooFinanceClient yahooFinanceClient;
     private final OpenAiClient openAiClient;
+    private final JavaMailSender javaMailSender;
 
     public NewsService(
         NewsRepository newsRepository,
         StockService stockService,
         YahooFinanceClient yahooFinanceClient,
-        OpenAiClient openAiClient
+        OpenAiClient openAiClient,
+        JavaMailSender javaMailSender
     ) {
         this.newsRepository = newsRepository;
         this.stockService = stockService;
         this.yahooFinanceClient = yahooFinanceClient;
         this.openAiClient = openAiClient;
+        this.javaMailSender = javaMailSender;
     }
 
     /**
@@ -92,13 +98,13 @@ public class NewsService {
     }
 
     @Async
-    public void generateAndSendNewsletter(String userId, String notificationEmail) {
+    public CompletableFuture<Void> generateAndSendNewsletter(String userId, String notificationEmail) {
         var companyNewsGroupedByTicker = getCompanyNewsForUserGroupedByTicker(userId);
 
-        var newsletter = new StringBuilder();
+        var newsletterContent = new StringBuilder();
 
         for (List<CompanyNews> companyNewsList : companyNewsGroupedByTicker.values()) {
-            newsletter
+            newsletterContent
                 .append("News for ")
                 .append(companyNewsList.getFirst().companyName())
                 .append(" (")
@@ -106,7 +112,7 @@ public class NewsService {
                 .append(")\n");
 
             for (CompanyNews companyNews : companyNewsList) {
-                newsletter
+                newsletterContent
                     .append("Sentiment: ")
                     .append(companyNews.newsSentiment())
                     .append("\n")
@@ -116,10 +122,16 @@ public class NewsService {
                     .append("\n\n");
             }
 
-            newsletter.append("\n");
+            newsletterContent.append("\n");
         }
 
-        System.out.println(newsletter);
+        var message = new SimpleMailMessage();
+        message.setTo(notificationEmail);
+        message.setSubject("Daily News-Service Newsletter");
+        message.setText(newsletterContent.toString());
+        javaMailSender.send(message);
+
+        return CompletableFuture.completedFuture(null);
     }
 
     public void deleteNewsArticlesCreatedAtOrBefore(LocalDateTime localDateTime) {

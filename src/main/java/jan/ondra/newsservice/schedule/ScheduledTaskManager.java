@@ -7,8 +7,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Component
 public class ScheduledTaskManager {
@@ -21,19 +24,15 @@ public class ScheduledTaskManager {
         this.userService = userService;
     }
 
-    /**
-     * Runs every quarter-hour at minutes 0, 15, 30 and 45.
-     * 1. notifies users that want to be notified at this time
-     * 2. deletes news articles that are at least 24 hours old
-     * 3. gathers new news articles
-     */
     @Scheduled(cron = "5 0,15,30,45 * * * *")
-    public void notifyUsers() {
-        var currentUtcDateTime = LocalDateTime.now(UTC).withSecond(0).withNano(0);
+    public void notifyUsersThenDeleteOldNewsThenGatherNewNews() {
+        var currentUtcDateTime = LocalDateTime.now(UTC).truncatedTo(MINUTES);
 
+        var futures = new ArrayList<CompletableFuture<Void>>();
         for (NotificationTarget target : userService.getNotificationTargetsByNotificationTime(currentUtcDateTime)) {
-            newsService.generateAndSendNewsletter(target.userId(), target.notificationEmail());
+            futures.add(newsService.generateAndSendNewsletter(target.userId(), target.notificationEmail()));
         }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         newsService.deleteNewsArticlesCreatedAtOrBefore(currentUtcDateTime.minusDays(1));
 
