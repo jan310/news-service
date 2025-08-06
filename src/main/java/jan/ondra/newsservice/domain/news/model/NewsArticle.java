@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record NewsArticle(
     String link,
+    String stockTicker,
     String summary,
     Sentiment sentiment,
     LocalDateTime createdAt

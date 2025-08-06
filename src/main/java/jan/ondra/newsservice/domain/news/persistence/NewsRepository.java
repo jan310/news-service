@@ -23,7 +23,7 @@ public class NewsRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public void addNewsArticleToStock(NewsArticle newsArticle, String stockTicker) {
+    public void addNewsArticle(NewsArticle newsArticle) {
         var sqlStatement = """
             INSERT INTO news_articles (link, stock_ticker, summary, sentiment, created_at)
             VALUES (:link, :stock_ticker, :summary, :sentiment, :created_at);
@@ -31,7 +31,7 @@ public class NewsRepository {
 
         var parameters = Map.of(
             "link", newsArticle.link(),
-            "stock_ticker", stockTicker,
+            "stock_ticker", newsArticle.stockTicker(),
             "summary", newsArticle.summary(),
             "sentiment", newsArticle.sentiment().name(),
             "created_at", newsArticle.createdAt()
@@ -71,7 +71,7 @@ public class NewsRepository {
     }
 
     public void deleteNewsArticlesCreatedAtOrBefore(LocalDateTime creationTime) {
-        var sqlStatement = "DELETE FROM news_articles WHERE created_at >= :creation_time";
+        var sqlStatement = "DELETE FROM news_articles WHERE created_at <= :creation_time";
 
         var parameters = Map.of("creation_time", creationTime);
 

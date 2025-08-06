@@ -1,109 +1,134 @@
 package jan.ondra.newsservice.domain.news.persistence;
 
+import jan.ondra.newsservice.domain.news.model.CompanyNews;
 import jan.ondra.newsservice.domain.news.model.NewsArticle;
-import jan.ondra.newsservice.enums.Sentiment;
+import jan.ondra.newsservice.domain.stock.model.Stock;
+import jan.ondra.newsservice.domain.user.model.User;
 import jan.ondra.newsservice.exception.exceptions.NewsArticleAlreadyExistsException;
 import jan.ondra.newsservice.exception.exceptions.StockTickerNotFoundException;
-import jan.ondra.newsservice.helper.TestcontainersTest;
+import jan.ondra.newsservice.helper.DatabaseIntegrationTest;
+import jan.ondra.newsservice.helper.NewsArticleRowMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.lang.NonNull;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Map;
 
+import static jan.ondra.newsservice.enums.Sentiment.NEGATIVE;
+import static jan.ondra.newsservice.enums.Sentiment.NEUTRAL;
 import static jan.ondra.newsservice.enums.Sentiment.POSITIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Import(NewsRepository.class)
-class NewsRepositoryTest extends TestcontainersTest {
+class NewsRepositoryTest extends DatabaseIntegrationTest {
 
-    @Autowired private NewsRepository newsRepository;
-    @Autowired private JdbcTemplate jdbcTemplate;
-
-    private final NewsArticleRowMapper newsArticleRowMapper = new NewsArticleRowMapper();
+    @Autowired
+    private NewsRepository newsRepository;
 
     @Nested
-    class AddNewsArticleToStock {
-
-        LocalDateTime localDateTime = LocalDateTime.of(2025,7,20,8,0);
+    class AddNewsArticle {
 
         @Test
-        @DisplayName("succeeds")
+        @DisplayName("adds the given news article to the correct stock")
         void success() {
-            insertStock();
-            var newsArticle = new NewsArticle("https://asdf.com", "summary", POSITIVE, localDateTime);
-            var stockTicker = "MSFT";
+            insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
+            var newsArticle = new NewsArticle("https://asdf.com", "MSFT", "summary", POSITIVE, LocalDateTime.now());
 
-            newsRepository.addNewsArticleToStock(newsArticle, stockTicker);
+            newsRepository.addNewsArticle(newsArticle);
 
-            assertThat(getPersistedNewsArticle(stockTicker)).isEqualTo(newsArticle);
+            assertThat(
+                jdbcTemplate.queryForObject(
+                    "SELECT * FROM news_articles WHERE stock_ticker = :stock_ticker",
+                    Map.of("stock_ticker", "MSFT"),
+                    new NewsArticleRowMapper()
+                )
+            ).isEqualTo(newsArticle);
         }
 
         @Test
         @DisplayName("throws correct exception when news article already exists")
         void error1() {
-            insertStock();
-            var newsArticle = new NewsArticle("https://asdf.com", "summary", POSITIVE, localDateTime);
-            var stockTicker = "MSFT";
-            newsRepository.addNewsArticleToStock(newsArticle, stockTicker);
+            insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
+            var newsArticle = new NewsArticle("https://asdf.com", "MSFT", "summary", POSITIVE, LocalDateTime.now());
+            newsRepository.addNewsArticle(newsArticle);
 
-            assertThatThrownBy(() -> newsRepository.addNewsArticleToStock(newsArticle, stockTicker))
-                .isInstanceOf(NewsArticleAlreadyExistsException.class)
-                .hasCauseInstanceOf(DuplicateKeyException.class);
+            assertThatThrownBy(() -> newsRepository.addNewsArticle(newsArticle))
+                .isInstanceOf(NewsArticleAlreadyExistsException.class);
         }
 
         @Test
         @DisplayName("throws correct exception when stock sticker does not exist")
         void error2() {
-            var newsArticle = new NewsArticle("https://asdf.com", "summary", POSITIVE, localDateTime);
-            var stockTicker = "MSFT";
+            var newsArticle = new NewsArticle("https://asdf.com", "MSFT", "summary", POSITIVE, LocalDateTime.now());
 
-            assertThatThrownBy(() -> newsRepository.addNewsArticleToStock(newsArticle, stockTicker))
-                .isInstanceOf(StockTickerNotFoundException.class)
-                .hasCauseInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> newsRepository.addNewsArticle(newsArticle))
+                .isInstanceOf(StockTickerNotFoundException.class);
         }
 
     }
 
-    private void insertStock() {
-        jdbcTemplate.update(
-            """
-            INSERT INTO stocks (ticker, company_name, latest_news_link)
-            VALUES ('MSFT', 'Microsoft', 'https://asdf.com');
-            """
-        );
+    @Nested
+    class GetCompanyNewsForUser {
+
+        @Test
+        @DisplayName("returns the correct CompanyNews")
+        void success() {
+            insertUser(new User("user1", true, "user1@email.com", LocalTime.now(), "Europe/Berlin"));
+            insertUser(new User("user2", true, "user2@email.com", LocalTime.now(), "Europe/Berlin"));
+
+            insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
+            insertStock(new Stock("AAPL", "Apple", "https://aapl-news.com"));
+            insertStock(new Stock("GOOG", "Google", "https://goog-news.com"));
+
+            insertUserStockJunction("user1", "MSFT");
+            insertUserStockJunction("user1", "AAPL");
+            insertUserStockJunction("user2", "AAPL");
+            insertUserStockJunction("user2", "GOOG");
+
+            insertNewsArticle(new NewsArticle("https://msft-news-1.com", "MSFT", "summary1", POSITIVE, LocalDateTime.now()));
+            insertNewsArticle(new NewsArticle("https://msft-news-2.com", "MSFT", "summary2", NEUTRAL, LocalDateTime.now()));
+            insertNewsArticle(new NewsArticle("https://aapl-news-1.com", "AAPL", "summary3", NEGATIVE, LocalDateTime.now()));
+            insertNewsArticle(new NewsArticle("https://goog-news-1.com", "GOOG", "summary4", POSITIVE, LocalDateTime.now()));
+
+            var companyNews = newsRepository.getCompanyNewsForUser("user1");
+
+            assertThat(companyNews).containsExactlyInAnyOrder(
+                new CompanyNews("Microsoft", "MSFT", "https://msft-news-1.com", "summary1", POSITIVE),
+                new CompanyNews("Microsoft", "MSFT", "https://msft-news-2.com", "summary2", NEUTRAL),
+                new CompanyNews("Apple", "AAPL", "https://aapl-news-1.com", "summary3", NEGATIVE)
+            );
+        }
+
     }
 
-    private NewsArticle getPersistedNewsArticle(String stockTicker) {
-        return jdbcTemplate.queryForObject(
-            String.format("SELECT * FROM news_articles WHERE stock_ticker = '%s'", stockTicker),
-            newsArticleRowMapper
-        );
-    }
+    @Nested
+    class DeleteNewsArticlesCreatedAtOrBefore {
 
-}
+        @Test
+        @DisplayName("deletes the correct NewsArticles")
+        void success() {
+            insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
+            var newsArticle = new NewsArticle("https://news-1.com","MSFT","summary1",POSITIVE,LocalDateTime.of(2025, 8, 6, 10, 0));
+            insertNewsArticle(newsArticle);
+            insertNewsArticle(new NewsArticle("https://news-2.com","MSFT","summary2",POSITIVE,LocalDateTime.of(2025, 8, 5, 10, 0)));
+            insertNewsArticle(new NewsArticle("https://news-3.com","MSFT","summary3",POSITIVE,LocalDateTime.of(2025, 8, 5, 9, 0)));
 
-class NewsArticleRowMapper implements RowMapper<NewsArticle> {
+            newsRepository.deleteNewsArticlesCreatedAtOrBefore(LocalDateTime.of(2025, 8, 5, 10, 0));
 
-    @Override
-    @NonNull
-    public NewsArticle mapRow(ResultSet rs, int rowNum) throws SQLException {
-        return new NewsArticle(
-            rs.getString("link"),
-            rs.getString("summary"),
-            Sentiment.valueOf(rs.getString("sentiment")),
-            rs.getTimestamp("created_at").toLocalDateTime()
-        );
+            assertThat(
+                jdbcTemplate.query(
+                    "SELECT * FROM news_articles WHERE stock_ticker = :stock_ticker",
+                    Map.of("stock_ticker", "MSFT"),
+                    new NewsArticleRowMapper()
+                )
+            ).containsExactly(newsArticle);
+        }
+
     }
 
 }

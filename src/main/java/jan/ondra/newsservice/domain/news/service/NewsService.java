@@ -83,14 +83,14 @@ public class NewsService {
                     newsArticle
                 );
                 if (newsArticleAnalysis.relevant()) {
-                    newsRepository.addNewsArticleToStock(
+                    newsRepository.addNewsArticle(
                         new NewsArticle(
                             link,
+                            stock.ticker(),
                             newsArticleAnalysis.summary(),
                             newsArticleAnalysis.sentiment(),
                             creationTimeStamp
-                        ),
-                        stock.ticker()
+                        )
                     );
                 }
             }
