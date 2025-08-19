@@ -7,7 +7,7 @@ import org.springframework.lang.NonNull;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-class StockRowMapper implements RowMapper<Stock> {
+public class StockRowMapper implements RowMapper<Stock> {
 
     @Override
     @NonNull

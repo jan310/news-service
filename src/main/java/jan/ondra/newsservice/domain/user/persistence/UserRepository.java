@@ -2,6 +2,7 @@ package jan.ondra.newsservice.domain.user.persistence;
 
 import jan.ondra.newsservice.domain.user.model.NotificationTarget;
 import jan.ondra.newsservice.domain.user.model.User;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,9 +13,13 @@ import java.util.Map;
 @Repository
 public class UserRepository {
 
+    private static final String USERS_NOTIFICATION_EMAIL_UNIQUE_VIOLATION =
+        "violates unique constraint \"users_notification_email_unique\"";
+
+    private static final UserRowMapper userRowMapper = new UserRowMapper();
+    private static final NotificationTargetRowMapper notificationTargetRowMapper = new NotificationTargetRowMapper();
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final UserRowMapper userRowMapper = new UserRowMapper();
-    private final NotificationTargetRowMapper notificationTargetRowMapper = new NotificationTargetRowMapper();
 
     public UserRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -34,7 +39,15 @@ public class UserRepository {
             "time_zone", user.timeZone()
         );
 
-        jdbcTemplate.update(sqlStatement, parameters);
+        try {
+            jdbcTemplate.update(sqlStatement, parameters);
+        } catch (DataIntegrityViolationException e) {
+            if (e.getMostSpecificCause().getMessage().contains(USERS_NOTIFICATION_EMAIL_UNIQUE_VIOLATION)) {
+                throw new EmailAlreadyInUseException(e);
+            } else {
+                throw e;
+            }
+        }
     }
 
     public User getUser(String id) {
@@ -64,7 +77,15 @@ public class UserRepository {
             "time_zone", user.timeZone()
         );
 
-        jdbcTemplate.update(sqlStatement, parameters);
+        try {
+            jdbcTemplate.update(sqlStatement, parameters);
+        } catch (DataIntegrityViolationException e) {
+            if (e.getMostSpecificCause().getMessage().contains(USERS_NOTIFICATION_EMAIL_UNIQUE_VIOLATION)) {
+                throw new EmailAlreadyInUseException(e);
+            } else {
+                throw e;
+            }
+        }
     }
 
     public void deleteUser(String userId) {
@@ -79,9 +100,8 @@ public class UserRepository {
         var sqlStatement = """
             SELECT id, notification_email
             FROM users
-            WHERE
-                notification_enabled = true AND
-                notification_time = ((:utcDateTime AT TIME ZONE 'UTC') AT TIME ZONE time_zone)::time
+            WHERE notification_enabled = true
+            AND notification_time = ((:utcDateTime AT TIME ZONE 'UTC') AT TIME ZONE time_zone)::time
             """;
 
         var parameters = Map.of("utcDateTime", utcDateTime);

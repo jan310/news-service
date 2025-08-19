@@ -4,19 +4,16 @@ import jan.ondra.newsservice.domain.news.model.CompanyNews;
 import jan.ondra.newsservice.domain.news.model.NewsArticle;
 import jan.ondra.newsservice.domain.stock.model.Stock;
 import jan.ondra.newsservice.domain.user.model.User;
-import jan.ondra.newsservice.exception.exceptions.NewsArticleAlreadyExistsException;
-import jan.ondra.newsservice.exception.exceptions.StockTickerNotFoundException;
 import jan.ondra.newsservice.helper.DatabaseIntegrationTest;
-import jan.ondra.newsservice.helper.NewsArticleRowMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Map;
 
 import static jan.ondra.newsservice.enums.Sentiment.NEGATIVE;
 import static jan.ondra.newsservice.enums.Sentiment.NEUTRAL;
@@ -34,40 +31,34 @@ class NewsRepositoryTest extends DatabaseIntegrationTest {
     class AddNewsArticle {
 
         @Test
-        @DisplayName("adds the given news article to the correct stock")
-        void success() {
+        @DisplayName("adds the given news article")
+        void test1() {
             insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
             var newsArticle = new NewsArticle("https://asdf.com", "MSFT", "summary", POSITIVE, LocalDateTime.now());
 
             newsRepository.addNewsArticle(newsArticle);
 
-            assertThat(
-                jdbcTemplate.queryForObject(
-                    "SELECT * FROM news_articles WHERE stock_ticker = :stock_ticker",
-                    Map.of("stock_ticker", "MSFT"),
-                    new NewsArticleRowMapper()
-                )
-            ).isEqualTo(newsArticle);
+            assertThat(getAllNewsArticles()).containsExactly(newsArticle);
         }
 
         @Test
-        @DisplayName("throws correct exception when news article already exists")
-        void error1() {
+        @DisplayName("throws DataIntegrityViolationException when news article already exists")
+        void test2() {
             insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
             var newsArticle = new NewsArticle("https://asdf.com", "MSFT", "summary", POSITIVE, LocalDateTime.now());
             newsRepository.addNewsArticle(newsArticle);
 
             assertThatThrownBy(() -> newsRepository.addNewsArticle(newsArticle))
-                .isInstanceOf(NewsArticleAlreadyExistsException.class);
+                .isInstanceOf(DataIntegrityViolationException.class);
         }
 
         @Test
-        @DisplayName("throws correct exception when stock sticker does not exist")
-        void error2() {
+        @DisplayName("throws DataIntegrityViolationException when stock does not exist")
+        void test3() {
             var newsArticle = new NewsArticle("https://asdf.com", "MSFT", "summary", POSITIVE, LocalDateTime.now());
 
             assertThatThrownBy(() -> newsRepository.addNewsArticle(newsArticle))
-                .isInstanceOf(StockTickerNotFoundException.class);
+                .isInstanceOf(DataIntegrityViolationException.class);
         }
 
     }
@@ -77,7 +68,7 @@ class NewsRepositoryTest extends DatabaseIntegrationTest {
 
         @Test
         @DisplayName("returns the correct CompanyNews")
-        void success() {
+        void test() {
             insertUser(new User("user1", true, "user1@email.com", LocalTime.now(), "Europe/Berlin"));
             insertUser(new User("user2", true, "user2@email.com", LocalTime.now(), "Europe/Berlin"));
 
@@ -111,7 +102,7 @@ class NewsRepositoryTest extends DatabaseIntegrationTest {
 
         @Test
         @DisplayName("deletes the correct NewsArticles")
-        void success() {
+        void test() {
             insertStock(new Stock("MSFT", "Microsoft", "https://msft-news.com"));
             var newsArticle = new NewsArticle("https://news-1.com","MSFT","summary1",POSITIVE,LocalDateTime.of(2025, 8, 6, 10, 0));
             insertNewsArticle(newsArticle);
@@ -120,13 +111,7 @@ class NewsRepositoryTest extends DatabaseIntegrationTest {
 
             newsRepository.deleteNewsArticlesCreatedAtOrBefore(LocalDateTime.of(2025, 8, 5, 10, 0));
 
-            assertThat(
-                jdbcTemplate.query(
-                    "SELECT * FROM news_articles WHERE stock_ticker = :stock_ticker",
-                    Map.of("stock_ticker", "MSFT"),
-                    new NewsArticleRowMapper()
-                )
-            ).containsExactly(newsArticle);
+            assertThat(getAllNewsArticles()).containsExactly(newsArticle);
         }
 
     }

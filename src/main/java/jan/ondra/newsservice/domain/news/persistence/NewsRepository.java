@@ -2,10 +2,6 @@ package jan.ondra.newsservice.domain.news.persistence;
 
 import jan.ondra.newsservice.domain.news.model.CompanyNews;
 import jan.ondra.newsservice.domain.news.model.NewsArticle;
-import jan.ondra.newsservice.exception.exceptions.NewsArticleAlreadyExistsException;
-import jan.ondra.newsservice.exception.exceptions.StockTickerNotFoundException;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -16,8 +12,9 @@ import java.util.Map;
 @Repository
 public class NewsRepository {
 
+    private static final CompanyNewsRowMapper companyNewsRowMapper = new CompanyNewsRowMapper();
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final CompanyNewsRowMapper companyNewsRowMapper = new CompanyNewsRowMapper();
 
     public NewsRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -37,17 +34,7 @@ public class NewsRepository {
             "created_at", newsArticle.createdAt()
         );
 
-        try {
-            jdbcTemplate.update(sqlStatement, parameters);
-        } catch (DuplicateKeyException e) {
-            throw new NewsArticleAlreadyExistsException(e);
-        } catch (DataIntegrityViolationException e) {
-            if (e.getMessage().contains("violates foreign key constraint \"news_articles_stock_ticker_fkey\"")) {
-                throw new StockTickerNotFoundException(e);
-            } else {
-                throw e;
-            }
-        }
+        jdbcTemplate.update(sqlStatement, parameters);
     }
 
     public List<CompanyNews> getCompanyNewsForUser(String userId) {

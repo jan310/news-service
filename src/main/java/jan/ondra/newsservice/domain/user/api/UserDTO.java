@@ -6,17 +6,17 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Set;
 
-public record UserRequest(
+public record UserDTO(
     boolean notificationEnabled,
     String notificationEmail,
     LocalTime notificationTime,
     String timeZone
 ) {
 
-    private static final Set<String> VALID_TIME_ZONES = ZoneId.getAvailableZoneIds();
+    private static final Set<String> validTimeZones = ZoneId.getAvailableZoneIds();
 
     public User toUser(String id) {
-        if (!VALID_TIME_ZONES.contains(timeZone)) {
+        if (!validTimeZones.contains(timeZone)) {
             throw new IllegalArgumentException("Invalid time zone: " + timeZone);
         }
 

@@ -2,7 +2,10 @@ package jan.ondra.newsservice.helper;
 
 import jan.ondra.newsservice.domain.news.model.NewsArticle;
 import jan.ondra.newsservice.domain.stock.model.Stock;
+import jan.ondra.newsservice.domain.stock.persistence.StockRowMapper;
 import jan.ondra.newsservice.domain.user.model.User;
+import jan.ondra.newsservice.domain.user.persistence.UserRowMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -10,6 +13,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
+import java.util.List;
 import java.util.Map;
 
 @JdbcTest
@@ -20,7 +24,12 @@ public class DatabaseIntegrationTest {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.4");
 
     @Autowired
-    public NamedParameterJdbcTemplate jdbcTemplate;
+    private NamedParameterJdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        jdbcTemplate.update("DELETE FROM users; DELETE FROM stocks;", Map.of());
+    }
 
     public void insertUser(User user) {
         var sqlStatement = """
@@ -83,6 +92,29 @@ public class DatabaseIntegrationTest {
         );
 
         jdbcTemplate.update(sqlStatement, parameters);
+    }
+
+    public List<User> getAllUsers() {
+        return jdbcTemplate.query("SELECT * FROM users", new UserRowMapper());
+    }
+
+    public List<Stock> getAllStocks() {
+        return jdbcTemplate.query("SELECT * FROM stocks", new StockRowMapper());
+    }
+
+    public List<NewsArticle> getAllNewsArticles() {
+        return jdbcTemplate.query("SELECT * FROM news_articles", new NewsArticleRowMapper());
+    }
+
+    public boolean stockUserAssignmentExists(String stockTicker, String userId) {
+        return jdbcTemplate.queryForObject(
+            "SELECT EXISTS(SELECT 1 FROM user_stock_junction WHERE stock_ticker = :stock_ticker AND user_id = :user_id)",
+            Map.of(
+                "stock_ticker", stockTicker,
+                "user_id", userId
+            ),
+            Boolean.class
+        );
     }
 
 }

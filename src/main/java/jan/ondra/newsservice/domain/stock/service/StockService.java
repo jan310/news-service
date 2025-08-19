@@ -1,9 +1,11 @@
 package jan.ondra.newsservice.domain.stock.service;
 
 import jan.ondra.newsservice.domain.stock.model.Stock;
+import jan.ondra.newsservice.domain.stock.persistence.StockNotExistsException;
 import jan.ondra.newsservice.domain.stock.persistence.StockRepository;
 import jan.ondra.newsservice.client.yahoofinance.YahooFinanceClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,18 +20,22 @@ public class StockService {
         this.yahooFinanceClient = yahooFinanceClient;
     }
 
+    @Transactional
     public void assignStockToUser(String stockTicker, String userId) {
-        if (stockRepository.stockExists(stockTicker)) {
+        try {
             stockRepository.assignStockToUser(stockTicker, userId);
-        } else {
+        } catch (StockNotExistsException e) {
             var companyName = yahooFinanceClient.getCompanyNameOfTicker(stockTicker);
             var latestNewsLink = yahooFinanceClient.getNewsLinksForStockTicker(stockTicker).getFirst();
-            stockRepository.addStockAndAssignToUser(new Stock(stockTicker, companyName, latestNewsLink), userId);
+            stockRepository.addStock(new Stock(stockTicker, companyName, latestNewsLink));
+            stockRepository.assignStockToUser(stockTicker, userId);
         }
     }
 
+    @Transactional
     public void removeStockFromUser(String stockTicker, String userId) {
         stockRepository.removeStockFromUser(stockTicker, userId);
+        stockRepository.removeStockIfUnassigned(stockTicker);
     }
 
     public void updateLatestNewsLink(String ticker, String newLink) {
