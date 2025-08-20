@@ -3,6 +3,7 @@ package jan.ondra.newsservice.client.yahoofinance;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -18,7 +19,12 @@ public class YahooFinanceClient {
     private final RestClient restClient;
 
     public YahooFinanceClient(RestClient.Builder restClientBuilder) {
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(2_000);
+        requestFactory.setReadTimeout(2_000);
+
         this.restClient = restClientBuilder
+            .requestFactory(requestFactory)
             .defaultHeader(
                 USER_AGENT,
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:137.0) Gecko/20100101 Firefox/137.0"

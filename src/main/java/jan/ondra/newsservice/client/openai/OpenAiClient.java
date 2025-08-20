@@ -6,6 +6,7 @@ import jan.ondra.newsservice.domain.news.model.NewsArticleAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -23,12 +24,17 @@ public class OpenAiClient {
     private final String openAiModel;
 
     public OpenAiClient(
-        @Value("${external-api.openai.api-key}") String apiKey,
-        @Value("${external-api.openai.model}") String openAiModel,
+        @Value("${openai.api-key}") String apiKey,
+        @Value("${openai.model}") String openAiModel,
         RestClient.Builder restClientBuilder,
         ObjectMapper objectMapper
     ) {
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(2_000);
+        requestFactory.setReadTimeout(30_000);
+
         this.restClient = restClientBuilder
+            .requestFactory(requestFactory)
             .baseUrl("https://api.openai.com/v1")
             .defaultHeader(AUTHORIZATION, "Bearer " + apiKey)
             .build();

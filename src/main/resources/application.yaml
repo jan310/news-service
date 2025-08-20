@@ -28,7 +28,6 @@ spring:
     virtual:
       enabled: true
 
-external-api:
-  openai:
-    api-key: ${OPENAI_API_KEY}
-    model: gpt-4o-mini
+openai:
+  api-key: ${OPENAI_API_KEY}
+  model: gpt-4o-mini
