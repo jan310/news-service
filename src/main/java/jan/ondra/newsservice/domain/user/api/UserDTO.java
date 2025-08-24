@@ -1,25 +1,26 @@
 package jan.ondra.newsservice.domain.user.api;
 
+import jan.ondra.newsservice.domain.user.api.validation.ValidEmail;
+import jan.ondra.newsservice.domain.user.api.validation.ValidQuarterHour;
+import jan.ondra.newsservice.domain.user.api.validation.ValidTimeZone;
 import jan.ondra.newsservice.domain.user.model.User;
 
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.Set;
 
 public record UserDTO(
     boolean notificationEnabled,
+
+    @ValidEmail
     String notificationEmail,
+
+    @ValidQuarterHour
     LocalTime notificationTime,
+
+    @ValidTimeZone
     String timeZone
 ) {
 
-    private static final Set<String> validTimeZones = ZoneId.getAvailableZoneIds();
-
     public User toUser(String id) {
-        if (!validTimeZones.contains(timeZone)) {
-            throw new IllegalArgumentException("Invalid time zone: " + timeZone);
-        }
-
         return new User(id, notificationEnabled, notificationEmail, notificationTime, timeZone);
     }
 

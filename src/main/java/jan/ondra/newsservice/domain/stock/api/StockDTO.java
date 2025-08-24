@@ -1,6 +1,6 @@
 package jan.ondra.newsservice.domain.stock.api;
 
-public record StockResponse(
+public record StockDTO(
     String ticker,
     String companyName
 ) {}
